@@ -45,10 +45,6 @@ void MyMulMat::init(int n, int m, int k,
     *la = k +  (7 - (k-1)%8); 
     *lb = m +  (7 - (m-1)%8); 
     *lc = m +  (7 - (m-1)%8);
-    cout << "k=" << k << endl; 
-    cout << "m=" << m << endl; 
-    cout << "la=" << *la << endl; 
-    cout << "lb=" << *lb << endl; 
     /*
     *A = new float[n*k]();
     *B = new float[k*m]();
@@ -59,11 +55,14 @@ void MyMulMat::init(int n, int m, int k,
     *A = (float*)_mm_malloc( sizeof(float) * (*lb)*(*la), 32);
     *B = (float*)_mm_malloc( sizeof(float) * (*la)*m, 32);
     *C = (float*)_mm_malloc( sizeof(float) * n*(*lb), 32);
-
+    tmp = (float*)_mm_malloc( sizeof(float) * 8, 32);
+    
     cout << "   a % 32 = " << (long)(*A)%32 <<endl;
     cout << "   b % 32 = " << (long)(*B)%32 <<endl;
     cout << "   c % 32 = " << (long)(*C)%32 <<endl;
-
+    this->tB = tB;
+    this->tmp = tmp;
+   
     this->n = n; this->m = *lb; this->k = *la;
     this->A = *A; this->B = *B; this->C = *C;
     return;
@@ -72,10 +71,9 @@ void MyMulMat::init(int n, int m, int k,
 void MyMulMat::multiply()
 {
     std::cout << "mymul multiply" << std::endl;
-
-    float* tB = transpose(B,k,m);
     __m256 VA,VB,VC;
-    
+    __m256 Vtmp;
+    tB = transpose(B,k,m);
     /*
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < m; j++) {
@@ -84,18 +82,21 @@ void MyMulMat::multiply()
 	    }
         }
     }
-
     */
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < m; j++) {
-            for (int l = 0; l < k; l+=8 ) {
-	      VA = _mm256_load_ps(&A[i*k +l]);
-	      VB = _mm256_load_ps(&tB[j*k+l]);
-	      VC = _mm256_load_ps(&C[i*m +j]);
-	      VC = _mm256_mul_ps(VA,VB);
-	      _mm256_store_ps((float*)&C[i*m+j],VC);
+    // 200_200_200 でtransposeに0.452ms 計算に26.294ms　transposeのオーバーヘッドは気にしなくてよさそう
+    
+    int i,j,l = 0;
+    for (i = 0; i < n; i++) {
+        for (j = 0; j < m; j++) {
+            for (l = 0; l < k; l+=8 ) {
+	      VA = _mm256_load_ps(&A[i*k + l]);
+	      VB = _mm256_load_ps(&tB[j*k + l]);
+	      _mm256_store_ps(tmp,_mm256_mul_ps(VA,VB));
+	      C[i*m+j] += tmp[0] + tmp[1] + tmp[2] + tmp[3] + tmp[4] + tmp[5] + tmp[6] + tmp[7] ;
+	      //_mm256_store_ps((float*)&C[i*m+j],VC);
 	    }
         }
-    }
+     }
+        
     return;
 }

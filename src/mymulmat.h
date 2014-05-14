@@ -14,5 +14,7 @@ public:
 private:
     int n, m, k;
     float *A, *B, *C ;
+    float *tB;
+    float *tmp;
 };
 
