@@ -1,5 +1,6 @@
 #pragma once
 #include "measure/imulmat.h"
+
 class MyMulMat : public IMulMat
 {
 public:
@@ -9,8 +10,9 @@ public:
               int *la, int *lb, int *lc,
               float **A, float **B, float **C);
     void multiply();
+    float* transpose(float* M , int row , int col);
 private:
     int n, m, k;
-    float *A, *B, *C;
+    float *A, *B, *C ;
 };
 
