@@ -1,3 +1,5 @@
+//現在openMP無し、1000_1000_1000で3.6GFLOPS。
+
 #include "mymulmat.h"
 #include <iostream>
 
