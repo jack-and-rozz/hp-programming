@@ -1,5 +1,5 @@
 <free>
-free_1_1_1.dat
+free_1000_1000_1000.dat
 free_200_200_200.dat
 <square>
 intel/square128-0.dat
@@ -12,3 +12,4 @@ intel/trmm128_129-0.dat
 intel/mv256_512-0.dat
 intel/mv128_128-0.dat
 <hemm>
+free_2048_2048_2048.dat

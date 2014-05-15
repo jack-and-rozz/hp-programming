@@ -31,8 +31,8 @@ endif
 ifeq ($(PLATFORM),MYLOCAL)
 CXX       = g++
 LD        = g++
-CXXFLAGS += -MMD -W -Wall -std=c++0x -mavx
-LDFLAGS  +=
+CXXFLAGS += -MMD -W -Wall -std=c++0x -mavx -O3 -fopenmp
+LDFLAGS  += -fopenmp
 LIBS     +=
 endif
 
