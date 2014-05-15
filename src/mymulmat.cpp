@@ -1,4 +1,10 @@
-//現在openMP無し、1000_1000_1000で3.6GFLOPS。
+//openMP無し、1000_1000_1000,ver.1で3.3~3.8GFLOPS。
+//openMP無し、1000_1000_1000,ver.2で2.0~2.4GFLOPS。
+//openMP無し、1000_1000_1000,ver.3で4.3~4.9GFLOPS。 N=4
+//openMP無し、1000_1000_1000,ver.3で5.5~5.6GFLOPS。 N=16
+//openMP無し、1000_1000_1000,ver.3で6.4~6.5GFLOPS。 N=32
+// 200_200_200 でtransposeに0.452ms 計算に26.294ms　transposeのオーバーヘッドは気にしなくてよさそう
+    
 
 #include "mymulmat.h"
 #include <iostream>
@@ -92,14 +98,52 @@ void MyMulMat::multiply()
   
     std::cout << "mymul multiply" << std::endl;
     tB = transpose(B,k,m);
-    __m256* VA = (__m256*)A;
-    __m256* VB = (__m256*)tB;
-    //__m256* VC = (__m256*)C;
-  
-    // 200_200_200 でtransposeに0.452ms 計算に26.294ms　transposeのオーバーヘッドは気にしなくてよさそう
+    int N = 32; //ローカルだとNを大きくしてもそんな変わらないけどymmレジスタの数が増えればもっと効果ありそう。
+    //ver.3
+    __m256 VA[N];
+    __m256* VB = (__m256*)B;
+    __m256* VC = (__m256*)C;
+    int i,j,l = 0;
+    int m2 = m/8;
+    int h = 0;
+    for (i = 0; i < n; i+=N) {
+      for (j = 0; j < m2; j++) {
+	for (l = 0; l < k; l+=1 ) {
+	  for(h=0;h<N;h+=1){
+	    if(i+h >=n){ //nがNの倍数では無かった場合
+	      break;
+	    }
+	    VA[h]= _mm256_broadcast_ss(&A[(i+h)*k+l]);
+	    VC[(i+h)*m2+j] = _mm256_add_ps(VC[(i+h)*m2+j], _mm256_mul_ps(VA[h],VB[l*m2+j]));
+	  }
+	}
+      }
+    } 
     
+    /*
+    //ver.2
+    __m256 VA ;
+    __m256* VB = (__m256*)B;
+    __m256* VC = (__m256*)C;
+    int i,j,l = 0;
+    int m2 = m/8;
+    for (i = 0; i < n; i++) {
+        for (j = 0; j < m2; j++) {
+            for (l = 0; l < k; l+=1 ) {
+	      VA= _mm256_broadcast_ss(&A[i*k+l]);
+	      VC[i*m2+j] = _mm256_add_ps(VC[i*m2+j], _mm256_mul_ps(VA,VB[l*m2+j]));
+	    }
+	}
+	} 
+    */   
+    /*
+    //ver.1
     int i,j,l = 0;
     int k2 = k/8;
+    __m256* VA = (__m256*)A;
+    __m256* VB = (__m256*)tB;
+    __m256* VC = (__m256*)C;
+  
     {
     for (i = 0; i < n; i++) {
         for (j = 0; j < m; j++) {
@@ -115,6 +159,7 @@ void MyMulMat::multiply()
         }
       }
     }
+    */
     /*
      for (i = 0; i < n; i++) {
        for (j = 0; j < m; j+=8) {
