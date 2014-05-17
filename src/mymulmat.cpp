@@ -29,7 +29,7 @@ MyMulMat::~MyMulMat()
   _mm_free(A);
   _mm_free(B);
   _mm_free(C);
-  _mm_free(tB);
+  //  _mm_free(tB);
   _mm_free(tmp);
   std::cout << "mymul destructed" << std::endl;
 }
@@ -56,8 +56,6 @@ void MyMulMat::init(int n, int m, int k,
     *la = k +  (7 - (k-1)%8); 
     *lb = m +  (7 - (m-1)%8); 
     *lc = m +  (7 - (m-1)%8);
-    //cout << "la=" << *la <<endl;
-    //cout << "lb=" << *lb <<endl;
     
     *A = (float*)_mm_malloc( sizeof(float) * n*(*la), 32);
     *B = (float*)_mm_malloc( sizeof(float) * k*(*lb), 32);
@@ -97,9 +95,9 @@ void MyMulMat::multiply()
 {
   
     std::cout << "mymul multiply" << std::endl;
-    tB = transpose(B,k,m);
-    int N = 32; //ローカルだとNを大きくしてもそんな変わらないけどymmレジスタの数が増えればもっと効果ありそう。
+    //tB = transpose(B,k,m);
     //ver.3
+    int N = 32; //ローカルだとNを大きくしてもそんな変わらないけどymmレジスタの数が増えればもっと効果ありそう。
     __m256 VA[N];
     __m256* VB = (__m256*)B;
     __m256* VC = (__m256*)C;
@@ -110,7 +108,7 @@ void MyMulMat::multiply()
       for (j = 0; j < m2; j++) {
 	for (l = 0; l < k; l+=1 ) {
 	  for(h=0;h<N;h+=1){
-	    if(i+h >=n){ //nがNの倍数では無かった場合
+	    if(i+h >=n){ //nがNの倍数では無かった場合途中で止める
 	      break;
 	    }
 	    VA[h]= _mm256_broadcast_ss(&A[(i+h)*k+l]);
@@ -154,21 +152,11 @@ void MyMulMat::multiply()
 	      _mm256_mul_ps(VA[i*k2+l],VB[j*k2+l]);
 	      _mm256_store_ps(tmp,_mm256_mul_ps(VA[i*k2+l],VB[j*k2+l])); 
 	      C[i*m+j] += tmp[0] + tmp[1] + tmp[2] + tmp[3] + tmp[4] + tmp[5] + tmp[6] + tmp[7] ;
-	      //ここの処理をstore_psで出来ないかな
+	      //ここの処理もリダクション出来ないか？512では_mm512_reduce_add_psがあるんだけど
 	    }
         }
       }
     }
-    */
-    /*
-     for (i = 0; i < n; i++) {
-       for (j = 0; j < m; j+=8) {
-	 for (l = 0; l < k; l+=8 ) {
-	   //Cも8つ同時に扱えないか？
-	   _mm256_add_ps(VC[i*m+j], _mm256_mul_ps(VA[],VB[]));
-	 }
-       }
-     }
     */
     return;
 }
